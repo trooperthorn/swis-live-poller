@@ -66,8 +66,11 @@ needs **read-only, default rights only**:
 | `SWIS_CA_BUNDLE` | no | | Path to a PEM bundle if SWIS presents a certificate from an internal CA not already in the system trust store |
 | `POLL_INTERVAL_SECONDS` | no | `20` | Seconds between poll cycles |
 | `SWIS_GPS_CUSTOM_PROPERTIES` | no | empty | Comma-separated candidate custom property names to check, e.g. `GPSLocation,VehiclePosition`. Each is verified against `Orion.CustomProperty` at startup; unknown names are logged and skipped, not guessed at |
+| `SWIS_CITY_CUSTOM_PROPERTY` | no | `City` | Name of the last-resort, place-name custom property to geocode. Set to empty to disable the City/Nominatim fallback entirely. Verified against `Orion.CustomProperty` the same way as the GPS candidates |
 | `PUSH_URL` | yes (unless `--dry-run`) | | Full URL of the Cloudflare Pages Function ingest endpoint |
 | `PUSH_TOKEN` | yes (unless `--dry-run`) | | Bearer token the ingest endpoint expects in `Authorization: Bearer <token>` |
+| `GEOCODE_CACHE_PATH` | no | `geocode_cache.json` | Local file the City→coordinates cache is persisted to, so a restart does not re-geocode every city |
+| `NOMINATIM_USER_AGENT` | no | `swis-live-poller/1.0 (contact: strife1012@gmail.com)` | Sent on every Nominatim request; Nominatim's usage policy requires a descriptive User-Agent with contact information |
 
 See `.env.example` for a template. Copy it to `.env` (gitignored) for local use, or set
 these directly in whatever process manager runs the poller.
@@ -103,6 +106,32 @@ against SolarWinds' own geocoder source or documentation beyond what's reference
 SolarWinds_OrionGuides. Before relying on this in production, populate a real test node's
 `Location` field with a known coordinate through the Orion web console and confirm the
 poller parses it as expected with `--dry-run`.
+
+## City fallback and Nominatim
+
+`City` is documented in this repository's companion project, `SolarWinds_OrionGuides`, only
+as an example custom property name that ships by convention on SolarWinds installs (see
+`docs/schema/key-entities.md` there). The extracted 2026.2 schema shows `Orion.NodesCustomProperties`
+carrying exactly one property, `NodeID` -- everything else, `City` included, is per-install
+data, not a schema fact this repository can verify. **Whether `City` is genuinely present on
+every SolarWinds installation is unverified; confirm it exists on your own server (the
+poller does this automatically via `Orion.CustomProperty` and logs a warning and disables
+the fallback if it is absent) before relying on it.**
+
+When a node has no usable GPS custom property and no usable `Location`, the poller geocodes
+its `City` value (default property name, overridable via `SWIS_CITY_CUSTOM_PROPERTY`)
+through OpenStreetMap's Nominatim search API. This is a deliberate last resort:
+
+- The result is a city centroid, not the asset's real position. A vehicle in city traffic
+  and a vehicle at the edge of town both geocode to the same point. The pushed snapshot's
+  `source` field is `"city:<name>"` for these, so the PWA can render them with a visibly
+  coarser/approximate treatment instead of implying precision the data does not have.
+- Nominatim's usage policy (https://operations.osmfoundation.org/policies/nominatim/) caps
+  free use at one request per second, requires a descriptive `User-Agent` naming the tool and
+  a contact, and asks callers to cache results rather than re-querying. This poller enforces
+  the rate limit in `Geocoder.geocode()`, sends `NOMINATIM_USER_AGENT`, and caches every
+  lookup (success or miss) both in memory and to `GEOCODE_CACHE_PATH` on disk, keyed on the
+  exact city string, so a restart does not re-geocode cities it has already resolved.
 
 ## Custom property discovery
 

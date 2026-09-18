@@ -1,12 +1,13 @@
--- Representative example only. The poller builds this text at runtime, one column per
--- configured custom property name in SWIS_GPS_CUSTOM_PROPERTIES. Property names cannot be
--- bound as SWQL parameters (parameters are values, not identifiers), so each name is
--- validated against Orion.CustomProperty (see discover_custom_properties.swql) before it is
--- formatted into this text. This file shows the shape for one property named
--- ExampleGpsField; validate it as a stand-in for the pattern, not as a literal query the
--- poller ships unmodified.
-SELECT n.NodeID, n.Caption, n.Status, n.CustomProperties.ExampleGpsField AS GpsValue
+-- Representative example only. build_custom_property_query() in poller.py builds this text
+-- at runtime, once per name in SWIS_GPS_CUSTOM_PROPERTIES plus SWIS_CITY_CUSTOM_PROPERTY.
+-- Property names cannot be bound as SWQL parameters (parameters are values, not
+-- identifiers), so each name is formatted into the query text, but only after it has been
+-- confirmed against Orion.CustomProperty (see discover_custom_properties.swql) and passed
+-- through _safe_identifier()'s allowlist regex. This file shows the shape for one property
+-- named ExampleGpsField, which does not exist on any real server, so
+-- SolarWinds_OrionGuides/tools/validate_swql.py correctly reports it as an unknown property.
+-- That failure is expected: this demonstrates the pattern, not a literal query the poller
+-- ships unmodified.
+SELECT n.NodeID, n.CustomProperties.ExampleGpsField AS PropValue
 FROM Orion.Nodes n
 WHERE n.CustomProperties.ExampleGpsField IS NOT NULL
-ORDER BY n.NodeID
-WITH ROWS 1 TO 500 WITH TOTALROWS
