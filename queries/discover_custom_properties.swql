@@ -1,0 +1,8 @@
+-- discover_custom_properties() in poller.py. Orion.CustomProperty records the *definition*
+-- half of a custom property (Table/Field/DataType); the value half lives on
+-- Orion.NodesCustomProperties, which the extracted schema shows carrying only NodeID --
+-- everything else on it is per-install. @table is bound as "NodesCustomProperties".
+SELECT cp.Field, cp.DataType, cp.MaxLength
+FROM Orion.CustomProperty cp
+WHERE cp.Table = @table
+ORDER BY cp.Field

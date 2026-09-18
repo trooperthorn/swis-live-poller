@@ -1,0 +1,12 @@
+-- Representative example only. The poller builds this text at runtime, one column per
+-- configured custom property name in SWIS_GPS_CUSTOM_PROPERTIES. Property names cannot be
+-- bound as SWQL parameters (parameters are values, not identifiers), so each name is
+-- validated against Orion.CustomProperty (see discover_custom_properties.swql) before it is
+-- formatted into this text. This file shows the shape for one property named
+-- ExampleGpsField; validate it as a stand-in for the pattern, not as a literal query the
+-- poller ships unmodified.
+SELECT n.NodeID, n.Caption, n.Status, n.CustomProperties.ExampleGpsField AS GpsValue
+FROM Orion.Nodes n
+WHERE n.CustomProperties.ExampleGpsField IS NOT NULL
+ORDER BY n.NodeID
+WITH ROWS 1 TO 500 WITH TOTALROWS

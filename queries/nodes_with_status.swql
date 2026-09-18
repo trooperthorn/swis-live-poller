@@ -1,0 +1,12 @@
+-- fetch_nodes() in poller.py. Orion.Nodes has no StatusInfo navigation property, so the
+-- status-name join is written out rather than via n.StatusInfo.StatusName (confirmed
+-- against SolarWinds_OrionGuides docs/swql/gotchas.md #2.3).
+SELECT TOP 2000
+    n.NodeID,
+    n.Caption,
+    n.Location,
+    n.Status,
+    s.StatusName
+FROM Orion.Nodes n
+JOIN Orion.StatusInfo s ON s.StatusId = n.Status
+ORDER BY n.NodeID

@@ -1,0 +1,28 @@
+# systemd unit example for a Linux host on Sean's LAN. Adjust User, WorkingDirectory, and
+# the venv path. Put real values in /etc/swis-live-poller.env (root-readable only, mode
+# 0600) rather than in this file; systemd's EnvironmentFile= reads a plain KEY=VALUE file
+# at the same shape as .env.example in this repo.
+#
+# Install:
+#   sudo cp deploy/swis-live-poller.service /etc/systemd/system/
+#   sudo cp .env.example /etc/swis-live-poller.env   # then edit with real values
+#   sudo chmod 600 /etc/swis-live-poller.env
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now swis-live-poller
+
+[Unit]
+Description=SWIS live asset GPS poller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=swis-live-poller
+WorkingDirectory=/opt/swis-live-poller
+EnvironmentFile=/etc/swis-live-poller.env
+ExecStart=/opt/swis-live-poller/.venv/bin/python /opt/swis-live-poller/poller.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
